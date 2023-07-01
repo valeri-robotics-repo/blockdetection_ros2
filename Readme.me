@@ -1,0 +1,39 @@
+
+
+source /opt/ros/foxy/setup.bash
+. install/setup.bash #(Probably not necessary)
+ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
+
+export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
+
+
+
+In a 2nd terminal:
+
+cd sample_ros2/
+
+source /opt/ros/foxy/setup.bash
+export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
+. install/setup.bash
+ros2 run cpp_pubsub listener
+
+
+To see the value of library path:  echo $LD_LIBRARY_PATH
+
+
+To Compile:
+
+colcon build --packages-select cpp_pubsub
+
+
+cannot convert ‘xform’ (type ‘const TransformStamped’ {aka 
+‘const geometry_msgs::TransformStamped_<std::allocator<void> >’}) to type 
+
+
+‘const TransformStamped&’ {aka 
+‘const geometry_msgs::msg::TransformStamped_<std::allocator<void> >&’}
+
+
+
+
+
