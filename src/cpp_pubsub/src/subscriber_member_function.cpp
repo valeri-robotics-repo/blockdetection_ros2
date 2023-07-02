@@ -22,10 +22,12 @@
 #include "open3d_ros.h"
 #include "detectblocks.h"
 #include "open3d/Open3D.h"
-
+#include "tf2/exceptions.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
 
 using std::placeholders::_1;
-
+using namespace std::literals::chrono_literals;
 using namespace open3d;
 
 class MinimalSubscriber : public rclcpp::Node
@@ -34,6 +36,12 @@ public:
   MinimalSubscriber()
   : Node("minimal_subscriber")
   {
+    tf_buffer_ =
+      std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ =
+      std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+
     subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       "/camera/depth/color/points", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
   }
@@ -41,13 +49,28 @@ public:
 private:
 void topic_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) const
     {
-      //RCLCPP_INFO(this->get_logger(), "I received the message , height is: '%d'", msg->height); //
-      //std::cout << "Complete ROS cloud is: " << msg.get() << std::endl;      
-      RCLCPP_INFO(this->get_logger(), "I received the message v1.0!"); //
+
+      RCLCPP_INFO(this->get_logger(), "I received the message v1.1!"); //
       //Pass this onto the block detector...
+      //look up the transform:
+      geometry_msgs::msg::TransformStamped xform;
+
+
+      //"neck_link", "camera_color_optical_frame",
+      xform = tf_buffer_->lookupTransform("neck_link", "camera_depth_optical_frame",
+         msg->header.stamp, 2000ms); //ros::Duration(1.0));
+
+
+      RCLCPP_INFO(this->get_logger(), "I did the transform!");
+      std::cout << "XFORM: " << xform.transform.rotation.x << std::endl;
+      std::cout << "XFORM: " << xform.transform.rotation.y << std::endl;
+      std::cout << "XFORM: " << xform.transform.rotation.z << std::endl;
+      std::cout << "XFORM: " << xform.transform.rotation.w << std::endl;
+      std::cout << "XFORM: should roughly match tf2:quat at 45 degree tilt" << std::endl;
+      
 
       open3d::geometry::PointCloud source;
-      geometry_msgs::msg::TransformStamped xform;
+
       //orient the point cloud such that the surface is horizontal:
       tf2::Quaternion tf2_quat, tf2_quat_from_msg;
       tf2_quat.setRPY(0.006, 0.960, 0.007);
@@ -82,7 +105,7 @@ void topic_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) const
         closestPointForward, closestPointRight, closestPointLeft);
 
       //Save the point cloud for later debugging:
-      auto plyfilename ="/home/valerie/sample_ros2/debugdetectblock.ply";
+      auto plyfilename ="/home/valerie/sample_ros2/debugdetectblock2.ply";
       open3d::io::WritePointCloud(plyfilename, source);
 
       //open3d_ros::rosToOpen3d(msg, source, false);
@@ -99,9 +122,10 @@ void topic_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) const
       
       
       o3dpc.SegmentBlocks(
-        *source_ptr,
+        source,
         horizontal_surface_heights,
-        block_list);
+        block_list, 
+        -1.3);
 
       std::vector<std::shared_ptr<const geometry::Geometry>> geometry_ptrs;
       geometry_ptrs.push_back(source_ptr);
@@ -134,7 +158,9 @@ void topic_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) const
     }
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
-    
+    std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+
 };
 
 int main(int argc, char * argv[])

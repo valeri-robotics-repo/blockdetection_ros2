@@ -1,16 +1,16 @@
 
 
-source /opt/ros/foxy/setup.bash
-. install/setup.bash #(Probably not necessary)
-ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
+from the blockdetection_ros2 directory, in terminal:
 
-export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
 
+    source /opt/ros/foxy/setup.bash
+    . install/setup.bash #(Probably not necessary)
+    ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
 
 
 In a 2nd terminal:
 
-cd sample_ros2/
+cd blockdetection_ros2/
 
 source /opt/ros/foxy/setup.bash
 export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
@@ -21,19 +21,23 @@ ros2 run cpp_pubsub listener
 To see the value of library path:  echo $LD_LIBRARY_PATH
 
 
-To Compile:
+To Compile, from the blockdetection_ros folder,
 
-colcon build --packages-select cpp_pubsub
-
-
-cannot convert ‘xform’ (type ‘const TransformStamped’ {aka 
-‘const geometry_msgs::TransformStamped_<std::allocator<void> >’}) to type 
-
-
-‘const TransformStamped&’ {aka 
-‘const geometry_msgs::msg::TransformStamped_<std::allocator<void> >&’}
+    colcon build --packages-select cpp_pubsub
 
 
 
 
+Using Transforms:
 
+    If you have not already done so, install the necessary transforms packages for your distribution.  I am using foxy, so:
+        sudo apt install ros-foxy-joint-state-publisher-gui
+        sudo apt install ros-foxy-xacro
+
+    Create a new package:
+        ros2 pkg create --build-type ament_cmake basic_mobile_robot
+
+    be sure to source after building your new package:
+    . install/setup.bash
+        
+     ros2 run tf2_tools view_frames.py
