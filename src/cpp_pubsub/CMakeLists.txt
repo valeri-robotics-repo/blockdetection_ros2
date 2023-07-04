@@ -24,15 +24,15 @@ find_package(sensor_msgs REQUIRED)
 # System Dependancies
 find_package(Eigen3 REQUIRED)
 
+set(CMAKE_FIND_DEBUG_MODE 1)
+
 find_package(Open3D HINTS ~/Open3d/lib/cmake/)
 
-find_package(DetectBlocks REQUIRED HINTS /home/valerie/Open3d_example/sharedlib/build)
+find_package(DetectBlocks REQUIRED)
+
+
 find_package(tf2 REQUIRED )
 find_package(tf2_ros REQUIRED )
-
-
-#add_executable(talker src/publisher_member_function.cpp)
-#ament_target_dependencies(talker rclcpp std_msgs  sensor_msgs)
 include_directories(~Open3D/include)
 include_directories(/home/valerie/Open3d_example/sharedlib/include)
 

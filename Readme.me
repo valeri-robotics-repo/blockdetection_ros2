@@ -1,21 +1,19 @@
 
 
-from the blockdetection_ros2 directory, in terminal:
-
-
+From the blockdetection_ros2 directory, start your pointcould capture source.  I am using a realsense camera D435.
+In terminal:
     source /opt/ros/foxy/setup.bash
     . install/setup.bash #(Probably not necessary)
     ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
 
 
-In a 2nd terminal:
+Start your listener in a 2nd terminal:
 
-cd blockdetection_ros2/
-
-source /opt/ros/foxy/setup.bash
-export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
-. install/setup.bash
-ros2 run cpp_pubsub listener
+    cd blockdetection_ros2/
+    source /opt/ros/foxy/setup.bash
+    export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
+    . install/setup.bash
+    ros2 run cpp_pubsub listener
 
 
 To see the value of library path:  echo $LD_LIBRARY_PATH
@@ -23,21 +21,23 @@ To see the value of library path:  echo $LD_LIBRARY_PATH
 
 To Compile, from the blockdetection_ros folder,
 
-    colcon build --packages-select cpp_pubsub
-
-
-
+    colcon build
 
 Using Transforms:
+
+    My Realsense Camera is mounted to a pan-tilt system.  The orientation of the realsense camera is X up, Z right.  So you need to transform the orientation.  
+    I have an example of this manual transform in code.  If you are using your transform system, you do not need this.  
+    
+    Also, if you are tilting your camera, approximate the tilt angle and adjust the value accordingly.
 
     If you have not already done so, install the necessary transforms packages for your distribution.  I am using foxy, so:
         sudo apt install ros-foxy-joint-state-publisher-gui
         sudo apt install ros-foxy-xacro
 
-    Create a new package:
-        ros2 pkg create --build-type ament_cmake basic_mobile_robot
-
-    be sure to source after building your new package:
-    . install/setup.bash
+    Customize the file in: basic_mobile_robot/models/edward_the_robot.urdf
+    
+    Follow this amazing tutorial:
+        https://automaticaddison.com/how-to-create-a-simulated-mobile-robot-in-ros-2-using-urdf/
         
-     ros2 run tf2_tools view_frames.py
+    ros2 run tf2_tools view_frames.py
+
