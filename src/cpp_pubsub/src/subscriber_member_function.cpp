@@ -123,9 +123,7 @@ private:
 
     //Keep an unaderated copy of the original for saving later.
     geometry::PointCloud source_orig = source;
-    source.PaintUniformColor(Eigen::Vector3d(1.0, 1.0, 0.0));
-
-
+    
     std::shared_ptr<geometry::PointCloud> source_ptr = source.UniformDownSample(2);
     auto coord_axis = geometry::TriangleMesh::CreateCoordinateFrame(1.0, Eigen::Vector3d(0,0,0));
 
