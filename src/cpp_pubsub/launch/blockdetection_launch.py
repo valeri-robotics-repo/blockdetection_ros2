@@ -25,7 +25,10 @@ def generate_launch_description():
         executable="listener",
         parameters=[
             {"use_transform_system": True},
-            {"test_param": "What what?"}
+            {"source_frame": "camera_color_optical_frame2"},
+            {"target_frame": "link_chassis2"},
+            {"pointcloud_topic": "/camera/depth/color/points"},
+            {"debug_level": "None"},  #None, Verbal, Visual
         ]
     )
 

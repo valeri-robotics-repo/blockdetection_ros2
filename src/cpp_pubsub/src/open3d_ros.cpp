@@ -66,6 +66,7 @@ void rosToOpen3d(const sensor_msgs::msg::PointCloud2::SharedPtr& ros_pc2,
     double closest_fwd_x = 10000;
     double closest_right_norm = 10000;
     double closest_left_norm = 10000;
+    uint below_floor_ctr = 0;
 
     o3d_pc.points_.reserve(ros_pc2->height * ros_pc2->width);
     auto v_fwd_closest = Eigen::Vector3d(0,0,0);
@@ -106,7 +107,9 @@ void rosToOpen3d(const sensor_msgs::msg::PointCloud2::SharedPtr& ros_pc2,
             o3d_pc.points_.push_back(point_out);
             o3d_pc.colors_.push_back(cv);
 	    }
-        else {std::cout << "Below floor, skipping!" << floor_height << " " << point_out[2] <<std::endl;
+        else {
+            below_floor_ctr += 1;
+            //std::cout << "Below floor, skipping!" << floor_height << " " << point_out[2] <<std::endl;
         }
 
             
@@ -131,7 +134,7 @@ void rosToOpen3d(const sensor_msgs::msg::PointCloud2::SharedPtr& ros_pc2,
             }
             else {
                 bool isrightpath = (point_out[1] < -1.0 * forward_padding);
-                bool isleftpath = (point_out[1] > forward_padding);
+                //bool isleftpath = (point_out[1] > forward_padding);
                 auto dist = sqrt(point_out[0]*point_out[0] + point_out[1]* point_out[1]);
                 if (isrightpath && dist < closest_right_norm){
                     closest_right_norm = dist;
@@ -147,6 +150,8 @@ void rosToOpen3d(const sensor_msgs::msg::PointCloud2::SharedPtr& ros_pc2,
     closestPointForward = v_fwd_closest;
     closestPointRight = v_right_closest;
     closestPointLeft = v_left_closest;
+
+    std::cout << "SKIPPED POINTS BELOW FLOOR:  " << below_floor_ctr << " " << floor_height << std::endl;
 }
 
 

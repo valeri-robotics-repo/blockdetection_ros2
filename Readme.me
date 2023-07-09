@@ -6,7 +6,7 @@ In terminal:
     If you are going to manually orient your camera, you can just launch your point cloud publisher, for example this is for the realssense D435.  
         cd blockdetection_ros2/
         source /opt/ros/foxy/setup.bash
-        . install/setup.bash #(Probably not necessary)
+        . install/setup.bash 
         ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
     If you are using the URDF, you can launch the following:
         cd blockdetection_ros2/
@@ -20,9 +20,33 @@ Start your listener in a 2nd terminal:
     source /opt/ros/foxy/setup.bash
     export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
     . install/setup.bash
-    ros2 run cpp_pubsub listener --ros-args -p test_param:=goodbye -p use_transform_system:=true
+    ros2 run cpp_pubsub listener --ros-args -p test_param:=goodbye -p use_transform_system:=true -p save_ply:=true
+    OR, another example:
+    ros2 run cpp_pubsub listener --ros-args -p test_param:=goodbye -p use_transform_system:=False -p save_ply:=true -p manual_camera_tilt:=-45.0 -p debug_level:=None
+
     
-    NOTE:  std out is not printed when using python launch file.
+    NOTES:  std out is not printed when using python launch file.
+            You will not be able to list parameters if you are calling DrawGeometries as it is a blocking operation.
+
+
+Parameters:
+ros2 param list
+/minimal_subscriber:
+  debug_level
+  manual_camera_height
+  manual_camera_tilt
+  ply_filename
+  pointcloud_topic
+  save_ply
+  source_frame
+  target_frame
+  use_sim_time
+  use_transform_system
+
+
+    manual_camera_tilt:  this is in degrees.  Tilting forward should be a - number. 
+
+
 
 To see the value of library path:  echo $LD_LIBRARY_PATH
 

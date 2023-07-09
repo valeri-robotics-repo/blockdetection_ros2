@@ -41,22 +41,36 @@ class MinimalSubscriber : public rclcpp::Node
       tf_listener_ =
         std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-      this->declare_parameter("use_transform_system", false);
-      this->declare_parameter("test_param", "Hello!");
+      this->declare_parameter("use_transform_system", false);  //tested
+      this->declare_parameter("source_frame", "camera_color_optical_frame"); 
+      this->declare_parameter("target_frame", "link_chassis");
+      this->declare_parameter("debug_level", "Visual");
+      this->declare_parameter("pointcloud_topic", "/camera/depth/color/points"); //tested
+      this->declare_parameter("save_ply", false);  //tested
+      this->declare_parameter("ply_filename", "./plys/debugdetectblock2.ply");
+      
+      auto param_desc = rcl_interfaces::msg::ParameterDescriptor{};
+      param_desc.description = "How high, in meters are you holding the camera off the floor.";
+
+      this->declare_parameter("manual_camera_height", -1.37 ,  param_desc);  //tested
+      param_desc.description = "Tilt in degrees.  Forward will be a - number. for example, -45.0 if holding the camera at a 45 degree forward angle.";
+      this->declare_parameter("manual_camera_tilt", -45.0, param_desc );  //tested
+
+      std::string pointcloud_topic = this->get_parameter("pointcloud_topic").as_string();
+      RCLCPP_INFO(this->get_logger(), "Pointcloud Topic:  " + pointcloud_topic);
 
       subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/camera/depth/color/points", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
+        pointcloud_topic, 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
     }
 
 private:
   void topic_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) const
   {
     bool use_transform_system = this->get_parameter("use_transform_system").as_bool();
-    std::string test_param_value = this->get_parameter("test_param").as_string();
-    
-    std::cout << "test_param?" << test_param_value << std::endl;
-    std::cout << "use_trans?" << use_transform_system << std::endl;
-    RCLCPP_INFO(this->get_logger(), "test_param" + test_param_value); //
+    std::string source_frame = this->get_parameter("source_frame").as_string();
+    std::string target_frame = this->get_parameter("target_frame").as_string();
+    bool save_ply = this->get_parameter("save_ply").as_bool();
+
     
     RCLCPP_INFO(this->get_logger(), "I received the message v1.1!"); //
     //Pass this onto the block detector...
@@ -67,7 +81,7 @@ private:
     //bool use_transform_system = false;
     if (use_transform_system){
     try{ 
-      xform = tf_buffer_->lookupTransform("link_chassis", "camera_color_optical_frame",
+      xform = tf_buffer_->lookupTransform(target_frame, source_frame,
         msg->header.stamp, 2000ms); 
     }
     catch (std::exception &ex) {
@@ -78,16 +92,17 @@ private:
     }
     else {
 
-      const double CAMERA_HEIGHT = 1.37;
-      //orient the point cloud such that the surface is horizontal:
+      double CAMERA_HEIGHT =  this->get_parameter("manual_camera_height").as_double();
+      double CAMERA_TILT =  this->get_parameter("manual_camera_tilt").as_double();
+
+
       tf2::Quaternion tf2_quat, tf2_quat_from_msg;
 
       //FROM CAMERA DEPTH FRAME TO Z up, X forward Frame
-      //Expected by block detection
-      tf2_quat.setRPY( 0.0174533 * -90.0, 0.0, -90.0 * 0.0174533);
+      tf2_quat.setRPY( TO_RADIANS * -90.0, 0.0, -90.0 * TO_RADIANS);
 
       tf2::Quaternion tf2_quat_tilt;
-      tf2_quat_tilt.setRPY(0.0174533 * -45.0, 0.0, 0.0);  //45 degree tilt
+      tf2_quat_tilt.setRPY(TO_RADIANS * CAMERA_TILT, 0.0, 0.0);  //45 degree tilt
       tf2::Quaternion tf2_quat_total =  tf2_quat * tf2_quat_tilt;
       geometry_msgs::msg::Quaternion msg_quat = tf2::toMsg(tf2_quat_total);
       xform.transform.rotation = msg_quat;
@@ -98,18 +113,19 @@ private:
       xform.transform.translation.z = -1.0 * CAMERA_HEIGHT;
     }
 
-    float floor_height = -5.0;
+    float floor_height = -1 * xform.transform.translation.z + 0.10;
     Eigen::Vector3d closestPointForward, closestPointRight, closestPointLeft;
 
     open3d_ros::rosToOpen3d(msg, source, xform, floor_height,
       closestPointForward, closestPointRight, closestPointLeft);
 
-    //Save the point cloud for later debugging:
-    auto plyfilename ="/home/valerie/blockdetection_ros2/plys/debugdetectblock2.ply";
-    open3d::io::WritePointCloud(plyfilename, source);
+    
+
+    //Keep an unaderated copy of the original for saving later.
+    geometry::PointCloud source_orig = source;
+    source.PaintUniformColor(Eigen::Vector3d(1.0, 1.0, 0.0));
 
 
-    //returns a ptr!
     std::shared_ptr<geometry::PointCloud> source_ptr = source.UniformDownSample(2);
     auto coord_axis = geometry::TriangleMesh::CreateCoordinateFrame(1.0, Eigen::Vector3d(0,0,0));
 
@@ -117,7 +133,16 @@ private:
     std::vector<double> horizontal_surface_heights;
     std::vector<DetectedBlock> block_list;
 
-    auto debug_level = DebugLevel::None;
+    DebugLevel debug_level = DebugLevel::None;
+    std::string debug_level_param = this->get_parameter("debug_level").as_string();
+
+    if (debug_level_param == "Verbal"){
+      debug_level = DebugLevel::Verbal;
+    }
+    else if (debug_level_param == "Visual"){
+      debug_level = DebugLevel::Visual;
+    }
+
     Open3DPointCloud o3dpc(0.03f, false, debug_level );
     
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -160,6 +185,23 @@ private:
     visualization::DrawGeometries(geometry_ptrs, 
                                     "Detected Blocks Result");
 
+    //Save the point cloud for later debugging:
+    std::cout << "save_ply?" << save_ply << std::endl;
+    if (save_ply){
+      std::string plyfilename = this->get_parameter("ply_filename").as_string();
+
+      std::cout << "Saving ply to" << plyfilename << std::endl;
+
+
+      try {
+        open3d::io::WritePointCloud(plyfilename, source_orig);
+      }
+      catch (std::exception &ex) {
+        std::cout << "Error Saving Ply:  " << ex.what()
+                  << std::endl;
+      }        
+    }
+
   }
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
@@ -174,11 +216,10 @@ double toRadians(double degrees){
 
 }
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
 
-  
+
+void quaternion_test(){
+
   tf2::Quaternion tf2_quat_tilt, tf2_quat;
   tf2_quat.setRPY(toRadians(-120.0), 0.0, toRadians(-90.0));  //45 degree tilt
 
@@ -206,6 +247,12 @@ int main(int argc, char * argv[])
   std::cout << "  : " << tf2_quat_total.z() << std::endl;
   std::cout << "  : " << tf2_quat_total.w() << std::endl;
 
+}
+
+
+int main(int argc, char * argv[])
+{
+  rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<MinimalSubscriber>());
   rclcpp::shutdown();
   return 0;
