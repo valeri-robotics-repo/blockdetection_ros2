@@ -2,10 +2,17 @@
 
 From the blockdetection_ros2 directory, start your pointcould capture source.  I am using a realsense camera D435.
 In terminal:
-    source /opt/ros/foxy/setup.bash
-    . install/setup.bash #(Probably not necessary)
-    ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
 
+    If you are going to manually orient your camera, you can just launch your point cloud publisher, for example this is for the realssense D435.  
+        cd blockdetection_ros2/
+        source /opt/ros/foxy/setup.bash
+        . install/setup.bash #(Probably not necessary)
+        ros2 launch realsense2_camera rs_launch.py pointcloud.enable:=true enable_gyro:=true enable_accel:=true
+    If you are using the URDF, you can launch the following:
+        cd blockdetection_ros2/
+        source /opt/ros/foxy/setup.bash
+        . install/setup.bash
+        ros2 launch basic_mobile_robot basic_mobile_bot_v1.launch.py
 
 Start your listener in a 2nd terminal:
 
@@ -13,8 +20,9 @@ Start your listener in a 2nd terminal:
     source /opt/ros/foxy/setup.bash
     export LD_LIBRARY_PATH="/home/valerie/Open3d/lib"
     . install/setup.bash
-    ros2 run cpp_pubsub listener
-
+    ros2 run cpp_pubsub listener --ros-args -p test_param:=goodbye -p use_transform_system:=true
+    
+    NOTE:  std out is not printed when using python launch file.
 
 To see the value of library path:  echo $LD_LIBRARY_PATH
 
@@ -40,4 +48,9 @@ Using Transforms:
         https://automaticaddison.com/how-to-create-a-simulated-mobile-robot-in-ros-2-using-urdf/
         
     ros2 run tf2_tools view_frames.py
+
+
+
+
+ros2 run ros2_tutorials test_params_rclcpp
 

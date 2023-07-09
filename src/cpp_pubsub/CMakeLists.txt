@@ -37,7 +37,6 @@ include_directories(~Open3D/include)
 include_directories(/home/valerie/Open3d_example/sharedlib/include)
 
 add_executable(listener src/subscriber_member_function.cpp src/open3d_ros.cpp)
-#target_link_libraries(listener DetectBlocks)  # Link non-ament dependencies
 TARGET_LINK_LIBRARIES(listener detectblocks Open3D::Open3D )
 ament_target_dependencies(listener rclcpp std_msgs sensor_msgs tf2 tf2_ros )
 
@@ -45,7 +44,11 @@ install(TARGETS
 #listener
   listener
   DESTINATION lib/${PROJECT_NAME})
-  
+
+install(
+  DIRECTORY  launch 
+  DESTINATION share/${PROJECT_NAME}
+)
   
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

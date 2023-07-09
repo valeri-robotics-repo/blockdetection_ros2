@@ -10,6 +10,10 @@ from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.actions import IncludeLaunchDescription
+
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
 
 def generate_launch_description():
 
@@ -110,5 +114,15 @@ def generate_launch_description():
   ld.add_action(start_robot_state_publisher_cmd)
   ld.add_action(start_rviz_cmd)
 
+
+  realsense_ld = LaunchDescription([
+        IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([
+                    FindPackageShare("realsense2_camera"), '/launch', '/rs_launch.py']),
+                    launch_arguments={'pointcloud.enable': 'true'}.items(),
+                    #launch_arguments:{"pointcloud.enable":"true", "enable_gyro":"true"},
+            )
+    ])
+  ld.add_action(realsense_ld)
   return ld
 
